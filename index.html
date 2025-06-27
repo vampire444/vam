@@ -1384,42 +1384,74 @@ const searchSections = [
         }
     },
     {
-        section: "Internal",
+        section: "Match Related",
         entries: {
             "CurrentMatch": "protected NFJPHMKKEBF m_Match;",
             "MatchStatus": "public TeamChampionshipMatchStats matchStatus;",
             "MatchStatus2": "protected LICPHHNNPPF ILGECLEFCCO;",
             "LocalPlayer": "protected Player FJPEHEGICBO;",
             "2//DictionaryEntities": "public Boolean JGACIBNFCNA;",
+           
+        }
+    },
+
+   {
+        section: "Player Related",
+        entries: {
+            
             "2//Player_IsDead": "private static UInt32 AKOEEIMJBBD;",
             "Player_Name": "protected String OIAJCBLDHKP;",
             "Player_Data": "protected IPRIDataPool m_PRIDataPool;",
             "Player_ShadowBase": "public HHCBNAPCKHF m_ShadowState;",
             "XPose": "public FBCAHNCLMDC ADFIDIPODGK",
+           
+        }
+    },
+
+   {
+        section: "Avatar Related",
+        entries: {
+            
             "AvatarManager": "protected AvatarManager FOGJNGDMJKJ;",
             "Avatar": "IUmaAvatar EEAGBKBMBLD;",
             "Avatar_IsVisible": "private Boolean IsVisible;",
             "Avatar_Data": "ublic UMAData umaData;",
             "Avatar_Data_IsTeam": "public Boolean isTeammate;",
-            "FollowCamera": "protected FollowCamera CHDOHNOEBML;",
+           
+        }
+    },
+ {
+        section: "Camera Related",
+        entries: {
+            
+           "FollowCamera": "protected FollowCamera CHDOHNOEBML;",
             "Camera": "private Camera m_mainCamera;",
             "AimRotation": "private Quaternion <KCFEHMAIINO>k__BackingField;",
             "MainCameraTransform": "public Transform MainCameraTransform;",
-            "Weapon": "private Int32 m_WeaponPowerDepth;",
-            "WeaponData": "public Int32 WeaponDataID;",
+           
+        }
+    },
+  {
+        section: "Weapon Related",
+        entries: {
+            
+           "Weapon": "public GPBDEDFKJNA ActiveUISightingWeapon;",
+            "WeaponData": "private CHEJCCHHDMH <NOAOCMKGLAH>k__BackingField;",
             "WeaponName": "public String weaponName;",
             "WeaponRecoil": "private Single EFMCDHABKGP;",
             "ViewMatrix1": "private static PKFKHCGAJJJ DJFEGEIABKA;",
             "ViewMatrix2": "private static PKFKHCGAJJJ LDMEKEPALFF;"
+           
         }
     },
+    
     {
         section: "Silent Aim",
         entries: {
             "silentaim": "private Boolean <LPEIEILIKGC>k__BackingField;",
             "silent": "private MADMMIICBNN GEGFCFDGGGP;",
-            "silent2": "public Vector3 NHKKHPLFMNG;",
-            "silent3": "public Vector3 BOGOIAMJFDN;"
+            "silent2": "public Vector3 BOGOIAMJFDN;",
+            "silent3": "public Vector3 NHKKHPLFMNG;"
         }
     }
 ];
@@ -1481,41 +1513,59 @@ const searchSections = [
         }
 
         function extractOffsets() {
-            if (!csFileContent) {
-                csStatus.textContent = "Please load a .cs file first.";
-                csStatus.style.color = "#FF5252";
-                return;
-            }
+    if (!csFileContent) {
+        csStatus.textContent = "Please load a .cs file first.";
+        csStatus.style.color = "#FF5252";
+        return;
+    }
 
-            const lines = csFileContent.split('\n');
-            let result = "Extracted Offsets from Dump\nBy Vampire\n";
+    const lines = csFileContent.split('\n');
+    let result = "Extracted Offsets from Dump\nBy Vampire\n";
 
-            for (const section of searchSections) {
-                result += `\n// ====== ${section.section} ======\n\n`;
+    for (const section of searchSections) {
+        result += `\n// ====== ${section.section} ======\n\n`;
 
-                for (const key in section.entries) {
-                    const search = section.entries[key];
-                    const line = lines.find(l => l.includes(search));
+        for (const key in section.entries) {
+            const search = section.entries[key];
+            const matchedLines = lines.filter(l => l.includes(search));
 
-                    if (line) {
-                        const match = line.match(/\/\/\s*(0x[0-9a-fA-F]+)/);
-                        if (match) {
-                            result += `${key} = ${match[1]}\n`;
-                        } else {
-                            result += `${key}: Offset not found\n`;
-                        }
+            if (matchedLines.length > 0) {
+                let offsetIndex = 1;
+                let anyOffsetFound = false;
+
+                matchedLines.forEach((line, idx) => {
+                    // Match ALL offsets in the line like: // 0xABCDEF
+                    const matches = [...line.matchAll(/\/\/\s*(0x[0-9a-fA-F]+)/g)];
+                    
+                    if (matches.length > 0) {
+                        matches.forEach((m, i) => {
+                            const label = matches.length > 1 || matchedLines.length > 1
+                                ? `${key} [${offsetIndex++}]`
+                                : key;
+                            result += `${label} = ${m[1]}\n`;
+                        });
+                        anyOffsetFound = true;
                     } else {
-                        result += `${key}: Line not found\n`;
+                        result += `${key} [${offsetIndex++}]: Offset not found\n`;
                     }
-                }
-            }
+                });
 
-            csResult.textContent = result;
-            csResult.style.display = 'block';
-            csActions.style.display = 'flex';
-            csStatus.textContent = "Offsets extracted successfully.";
-            csStatus.style.color = "#4CAF50";
+                if (!anyOffsetFound) {
+                    result += `${key}: Matching line(s) found, but no offset\n`;
+                }
+            } else {
+                result += `${key}: Line not found\n`;
+            }
         }
+    }
+
+    csResult.textContent = result;
+    csResult.style.display = 'block';
+    csActions.style.display = 'flex';
+    csStatus.textContent = "Offsets extracted successfully.";
+    csStatus.style.color = "#4CAF50";
+}
+
 
         function clearCsFile() {
             csFileContent = "";
